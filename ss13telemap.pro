@@ -17,11 +17,14 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     calibrationdialog.cpp \
-    mapview.cpp
+    mapview.cpp \
+    usagedialog.cpp
 
 HEADERS  += mainwindow.h \
     calibrationdialog.h \
-    mapview.h
+    mapview.h \
+    usagedialog.h
 
 FORMS    += mainwindow.ui \
-    calibrationdialog.ui
+    calibrationdialog.ui \
+    usagedialog.ui

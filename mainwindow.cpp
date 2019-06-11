@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "calibrationdialog.h"
+#include "usagedialog.h"
 
 #include <QSettings>
 
@@ -54,44 +55,36 @@ MainWindow::MainWindow(QWidget *parent) :
         map_selected(ui->menuMaps->actions()[0]);
     }
 
-    ui->graphicsView->setScene(scene);
-    ui->graphicsView->calculateZoom();
+    ui->mapArea->setScene(scene);
+    ui->mapArea->calculateZoom();
     QApplication::setOverrideCursor( Qt::ArrowCursor );
-    ui->graphicsView->show();
+    ui->mapArea->show();
 
-    ui->stackedWidget->hide();
-    ui->tableWidget->setHorizontalHeaderLabels({"Name", "Map", "X", "Y"});
-    ui->tableWidget->horizontalHeader()->setDefaultAlignment(Qt::AlignHCenter);
-    ui->tableWidget->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
-    ui->tableWidget->horizontalHeader()->setResizeMode(0, QHeaderView::Stretch);
-    ui->tableWidget->horizontalHeader()->setResizeMode(1, QHeaderView::ResizeToContents);
-    ui->tableWidget->horizontalHeader()->setResizeMode(2, QHeaderView::Fixed);
-    ui->tableWidget->horizontalHeader()->setResizeMode(3, QHeaderView::Fixed);
+    //ui->stackedWidget->hide();
+    ui->bookmarkTable->setHorizontalHeaderLabels({"Name", "Map", "X", "Y"});
+    ui->bookmarkTable->horizontalHeader()->setDefaultAlignment(Qt::AlignHCenter);
+    ui->bookmarkTable->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
+    ui->bookmarkTable->horizontalHeader()->setResizeMode(0, QHeaderView::Interactive);
+    ui->bookmarkTable->horizontalHeader()->setResizeMode(1, QHeaderView::Interactive);
+    ui->bookmarkTable->horizontalHeader()->setResizeMode(2, QHeaderView::ResizeToContents);
+    ui->bookmarkTable->horizontalHeader()->setResizeMode(3, QHeaderView::ResizeToContents);
 
-    ui->tableWidget->horizontalHeader()->resizeSection(2, 50);
-    ui->tableWidget->horizontalHeader()->resizeSection(3, 50);
+    ui->bookmarkTable->horizontalHeader()->resizeSection(2, 30);
+    ui->bookmarkTable->horizontalHeader()->resizeSection(3, 30);
 
     QSettings bookmark_settings("bookmarks.ini", QSettings::IniFormat);
 
     int bookmark_size = bookmark_settings.beginReadArray("bookmark");
     for(int i=0; i < bookmark_size; i++) {
         bookmark_settings.setArrayIndex(i);
-        int row = ui->tableWidget->rowCount();
-        ui->tableWidget->insertRow(row);
-        ui->tableWidget->setItem(row, 0, new QTableWidgetItem(bookmark_settings.value("name").toString()));
-        ui->tableWidget->setItem(row, 1, new QTableWidgetItem(bookmark_settings.value("map").toString()));
-        ui->tableWidget->setItem(row, 2, new QTableWidgetItem(bookmark_settings.value("x").toString()));
-        ui->tableWidget->setItem(row, 3, new QTableWidgetItem(bookmark_settings.value("y").toString()));
+        int row = ui->bookmarkTable->rowCount();
+        ui->bookmarkTable->insertRow(row);
+        ui->bookmarkTable->setItem(row, 0, new QTableWidgetItem(bookmark_settings.value("name").toString()));
+        ui->bookmarkTable->setItem(row, 1, new QTableWidgetItem(bookmark_settings.value("map").toString()));
+        ui->bookmarkTable->setItem(row, 2, new QTableWidgetItem(bookmark_settings.value("x").toString()));
+        ui->bookmarkTable->setItem(row, 3, new QTableWidgetItem(bookmark_settings.value("y").toString()));
     }
     bookmark_settings.endArray();
-
-    bg = new QButtonGroup(this);
-    bg->setExclusive(true);
-    bg->addButton(ui->button_favourites);
-    bg->setId(ui->button_favourites, 0);
-    bg->addButton(ui->button_usage);
-    bg->setId(ui->button_usage, 1);
-    QObject::connect(bg, SIGNAL(buttonClicked(int)), this, SLOT(toolbutton_pressed(int)));
 
     QObject::connect(ui->menuMaps, SIGNAL(triggered(QAction*)), this, SLOT(map_selected(QAction*)));
     QObject::connect(ui->menuOverlays, SIGNAL(triggered(QAction*)), this, SLOT(overlay_selected(QAction*)));
@@ -108,7 +101,7 @@ MainWindow::~MainWindow()
 void MainWindow::pressed(QMouseEvent *e)
 {
     if(e->button() == Qt::MiddleButton) {
-        ui->graphicsView->resetZoom();
+        ui->mapArea->resetZoom();
     } else if(e->button() == Qt::RightButton) {
 
 
@@ -116,20 +109,20 @@ void MainWindow::pressed(QMouseEvent *e)
         sx = 1+ e->x()/32;
         sy = 1+ e->y()/32;
 
-        ui->label_ox->setText(QString("%1").arg(sx));
-        ui->label_oy->setText(QString("%1").arg(sy));
+        ui->coordinateOX->setText(QString("%1").arg(sx));
+        ui->coordinateOY->setText(QString("%1").arg(sy));
 
 
         bool e_mx_ok = false;
         bool e_my_ok = false;
-        ui->edit_mx->currentText().toInt(&e_mx_ok);
-        ui->edit_my->currentText().toInt(&e_my_ok);
+        ui->calibrationMX->currentText().toInt(&e_mx_ok);
+        ui->calibrationMY->currentText().toInt(&e_my_ok);
 
         if(e_mx_ok && e_my_ok) {
             float tx = (static_cast<float>(sx)+cx) / mx;
             float ty = (static_cast<float>(sy)+cy) / my;
-            ui->label_tx->setText(QString("%1").arg(tx));
-            ui->label_ty->setText(QString("%1").arg(ty));
+            ui->coordinateTX->setText(QString("%1").arg(tx));
+            ui->coordinateTY->setText(QString("%1").arg(ty));
         }
         e->accept();
     }
@@ -252,6 +245,12 @@ void MainWindow::on_actionCalibrate_triggered()
     d.exec();
 }
 
+void MainWindow::on_calibrateButton_clicked()
+{
+    on_actionCalibrate_triggered();
+}
+
+/*
 void MainWindow::toolbutton_pressed(int id)
 {
 
@@ -265,24 +264,41 @@ void MainWindow::toolbutton_pressed(int id)
         ui->stackedWidget->show();
     }
 }
-
+*/
 
 void MainWindow::calibrated(qreal mx, qreal my, qreal cx, qreal cy)
 {
     if(mx == 1 || mx == 2) {
-        ui->edit_mx->setCurrentIndex(mx);
+        ui->calibrationMX->setCurrentIndex(mx);
     } else if (mx == 4) {
-        ui->edit_mx->setCurrentIndex(3);
+        ui->calibrationMX->setCurrentIndex(3);
     }
 
     if(my == 1 || my == 2) {
-        ui->edit_my->setCurrentIndex(my);
+        ui->calibrationMY->setCurrentIndex(my);
     } else if (my == 4) {
-        ui->edit_my->setCurrentIndex(3);
+        ui->calibrationMY->setCurrentIndex(3);
     }
 
-    ui->edit_cx->setValue(cx);
-    ui->edit_cy->setValue(cy);
+    ui->calibrationCX->setValue(cx);
+    ui->calibrationCY->setValue(cy);
+    update_params();
+}
+
+void MainWindow::on_calibrationMX_currentIndexChanged()
+{
+    update_params();
+}
+void MainWindow::on_calibrationMY_currentIndexChanged()
+{
+    update_params();
+}
+void MainWindow::on_calibrationCX_valueChanged()
+{
+    update_params();
+}
+void MainWindow::on_calibrationCY_valueChanged()
+{
     update_params();
 }
 
@@ -328,42 +344,62 @@ void MainWindow::recalculate_manual()
 {
     bool e_mx_ok = false;
     bool e_my_ok = false;
-    ui->edit_mx->currentText().toInt(&e_mx_ok);
-    ui->edit_my->currentText().toInt(&e_my_ok);
+    ui->calibrationMX->currentText().toInt(&e_mx_ok);
+    ui->calibrationMY->currentText().toInt(&e_my_ok);
 
     if(e_mx_ok && e_my_ok) {
-        qreal mox = ui->edit_mox->value();
-        qreal moy = ui->edit_moy->value();
+        qreal mox = ui->manualOX->value();
+        qreal moy = ui->manualOY->value();
         float tx = (mox+cx) / mx;
         float ty = (moy+cy) / my;
-        ui->label_mtx->setText(QString("%1").arg(tx));
-        ui->label_mty->setText(QString("%1").arg(ty));
+        ui->manualTX->setText(QString("%1").arg(tx));
+        ui->manualTY->setText(QString("%1").arg(ty));
+    }
+}
+
+void MainWindow::recalculate_selected()
+{
+
+    bool e_mx_ok = false;
+    bool e_my_ok = false;
+    ui->calibrationMX->currentText().toInt(&e_mx_ok);
+    ui->calibrationMY->currentText().toInt(&e_my_ok);
+
+    float cox = ui->coordinateOX->text().toFloat();
+    float coy = ui->coordinateOY->text().toFloat();
+
+    if(e_mx_ok && e_my_ok) {
+        float tx = (cox+cx) / mx;
+        float ty = (coy+cy) / my;
+        ui->coordinateTX->setText(QString("%1").arg(tx));
+        ui->coordinateTY->setText(QString("%1").arg(ty));
     }
 }
 
 void MainWindow::update_params()
 {
-    cx = ui->edit_cx->value();
-    cy = ui->edit_cy->value();
+    cx = ui->calibrationCX->value();
+    cy = ui->calibrationCY->value();
 
     bool mx_ok = false;
     bool my_ok = false;
-    mx = ui->edit_mx->currentText().toInt(&mx_ok);
-    my = ui->edit_my->currentText().toInt(&my_ok);
+    mx = ui->calibrationMX->currentText().toInt(&mx_ok);
+    my = ui->calibrationMY->currentText().toInt(&my_ok);
 
     // Recalculate only with valid constants
     if(mx_ok && my_ok) {
         recalculate_manual();
-        on_tableWidget_itemSelectionChanged();
+        recalculate_selected();
+        on_bookmarkTable_itemSelectionChanged();
     } else {
-        ui->label_mtx->clear();
-        ui->label_mty->clear();
-        ui->label_btx->clear();
-        ui->label_bty->clear();
+        ui->manualTX->clear();
+        ui->manualTY->clear();
+        ui->bookmarkTX->clear();
+        ui->bookmarkTY->clear();
+        ui->coordinateTX->clear();
+        ui->coordinateTY->clear();
     }
 
-    ui->label_tx->clear();
-    ui->label_ty->clear();
 }
 
 
@@ -372,48 +408,49 @@ Map::Map(QString path)
 {
 }
 
-void MainWindow::on_pushButton_clicked()
+/*
+void MainWindow::on_bookmarkAdd_clicked()
 {
-    ui->tableWidget->insertRow(ui->tableWidget->rowCount());
+    ui->bookmarkTable->insertRow(ui->bookmarkTable->rowCount());
+}
+*/
+void MainWindow::on_bookmarkDelete_clicked()
+{
+    ui->bookmarkTable->removeRow(ui->bookmarkTable->currentRow());
 }
 
-void MainWindow::on_pushButton_2_clicked()
-{
-    ui->tableWidget->removeRow(ui->tableWidget->currentRow());
-}
-
-void MainWindow::on_pushButton_3_clicked()
+void MainWindow::on_bookmarkSave_clicked()
 {
     QSettings bookmark_settings("bookmarks.ini", QSettings::IniFormat);
     bookmark_settings.clear();
 
     bookmark_settings.beginWriteArray("bookmark");
-    for(int i=0; i < ui->tableWidget->rowCount(); i++) {
+    for(int i=0; i < ui->bookmarkTable->rowCount(); i++) {
         bookmark_settings.setArrayIndex(i);
-        bookmark_settings.setValue("name", ui->tableWidget->item(i, 0) ? ui->tableWidget->item(i, 0)->text() : "");
-        bookmark_settings.setValue("map" , ui->tableWidget->item(i, 1) ? ui->tableWidget->item(i, 1)->text() : "");
-        bookmark_settings.setValue("x"   , ui->tableWidget->item(i, 2) ? ui->tableWidget->item(i, 2)->text() : "");
-        bookmark_settings.setValue("y"   , ui->tableWidget->item(i, 3) ? ui->tableWidget->item(i, 3)->text() : "");
+        bookmark_settings.setValue("name", ui->bookmarkTable->item(i, 0) ? ui->bookmarkTable->item(i, 0)->text() : "");
+        bookmark_settings.setValue("map" , ui->bookmarkTable->item(i, 1) ? ui->bookmarkTable->item(i, 1)->text() : "");
+        bookmark_settings.setValue("x"   , ui->bookmarkTable->item(i, 2) ? ui->bookmarkTable->item(i, 2)->text() : "");
+        bookmark_settings.setValue("y"   , ui->bookmarkTable->item(i, 3) ? ui->bookmarkTable->item(i, 3)->text() : "");
     }
     bookmark_settings.endArray();
 
 }
 
-void MainWindow::on_tableWidget_itemSelectionChanged()
+void MainWindow::on_bookmarkTable_itemSelectionChanged()
 {
-    int row = ui->tableWidget->currentRow();
+    int row = ui->bookmarkTable->currentRow();
     if(row == -1) return;
 
-    if (!ui->tableWidget->item(row, 2) ||
-        !ui->tableWidget->item(row, 3)) return;
+    if (!ui->bookmarkTable->item(row, 2) ||
+        !ui->bookmarkTable->item(row, 3)) return;
 
-    int bx = ui->tableWidget->item(row, 2)->text().toInt();
-    int by = ui->tableWidget->item(row, 3)->text().toInt();
+    int bx = ui->bookmarkTable->item(row, 2)->text().toInt();
+    int by = ui->bookmarkTable->item(row, 3)->text().toInt();
 
-    if(currentMap->name == ui->tableWidget->item(row,1)->text()) {
+    if(currentMap->name == ui->bookmarkTable->item(row,1)->text()) {
         int x_pos = bx*32;
         int y_pos = scene->height() - by*32;
-        ui->graphicsView->centerOn(x_pos+16, y_pos+16);
+        ui->mapArea->centerOn(x_pos+16, y_pos+16);
 
         scene->highligt(QPoint{x_pos -32, y_pos});
     }
@@ -423,35 +460,45 @@ void MainWindow::on_tableWidget_itemSelectionChanged()
         float tx = (bx+cx) / mx;
         float ty = (by+cy) / my;
 
-        ui->label_bname->setText(ui->tableWidget->item(row, 0)->text());
-        ui->label_bmap->setText(ui->tableWidget->item(row, 1)->text());
-        ui->label_box->setText(QString("%1").arg(bx));
-        ui->label_boy->setText(QString("%1").arg(by));
-        ui->label_btx->setText(QString("%1").arg(tx));
-        ui->label_bty->setText(QString("%1").arg(ty));
+        ui->bookmarkName->setText(ui->bookmarkTable->item(row, 0)->text());
+        ui->bookmarkMap->setText(ui->bookmarkTable->item(row, 1)->text());
+        ui->bookmarkOX->setText(QString("%1").arg(bx));
+        ui->bookmarkOY->setText(QString("%1").arg(by));
+        ui->bookmarkTX->setText(QString("%1").arg(tx));
+        ui->bookmarkTY->setText(QString("%1").arg(ty));
     }
 }
 
-void MainWindow::on_pushButton_4_clicked()
+void MainWindow::on_bookmarkAdd_clicked()
 {
     if(selected) {
-        int row = ui->tableWidget->rowCount();
-        ui->tableWidget->insertRow(row);
+        int row = ui->bookmarkTable->rowCount();
+        ui->bookmarkTable->insertRow(row);
 
-        ui->tableWidget->setItem(row, 0, new QTableWidgetItem("Bookmark"));
-        ui->tableWidget->setItem(row, 1, new QTableWidgetItem(currentMap->name));
-        ui->tableWidget->setItem(row, 2, new QTableWidgetItem(QString("%1").arg(sx)));
-        ui->tableWidget->setItem(row, 3, new QTableWidgetItem(QString("%1").arg(sy)));
+        ui->bookmarkTable->setItem(row, 0, new QTableWidgetItem("Bookmark"));
+        ui->bookmarkTable->setItem(row, 1, new QTableWidgetItem(currentMap->name));
+        ui->bookmarkTable->setItem(row, 2, new QTableWidgetItem(QString("%1").arg(sx)));
+        ui->bookmarkTable->setItem(row, 3, new QTableWidgetItem(QString("%1").arg(sy)));
     }
 }
 
 
 
 
-void MainWindow::on_actionAbout_SS13_Telescience_Manager_triggered()
+void MainWindow::on_actionAbout_triggered()
 {
-    QMessageBox::about(this, tr("About Telescience Manager"), trUtf8("Telescience Manager\n© 2013-2014 by mysha (mysha@mysha.cu.cc)\n"
-                                                            "\n"
-                                                            "Donations in bitcoins or goon membership are appreciated.\n\n"
-                                                            "BTC donation address: %0").arg("1Gzk3F4C4FiMVjTHCCkRuRwqZoCKujtBXd"));
+    QMessageBox::about(this, tr("About Telescience Manager"),
+        trUtf8("Telescience Manager\n© 2013-2019 by mysha, ZeWaka, et al.\n"
+            "\n"
+            "This particular build maintained on GitHub at\n"
+            "https://github.com/Xkeeper0/ss13telesmap")
+        );
+}
+
+
+void MainWindow::on_actionUsage_triggered()
+{
+    UsageDialog d(this);
+    //QObject::connect(&d, SIGNAL(calibrated(qreal,qreal,qreal,qreal)), this, SLOT(calibrated(qreal,qreal,qreal,qreal)));
+    d.exec();
 }

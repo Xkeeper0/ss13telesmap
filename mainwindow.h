@@ -69,23 +69,22 @@ public slots:
     void map_selected(QAction *a);
     void overlay_selected(QAction *a);
     void recalculate_manual();
+    void recalculate_selected();
     void update_params();
     
 private slots:
     void on_actionCalibrate_triggered();
-    void toolbutton_pressed(int id);
-
-    void on_pushButton_clicked();
-
-    void on_pushButton_2_clicked();
-
-    void on_pushButton_3_clicked();
-
-    void on_tableWidget_itemSelectionChanged();
-
-    void on_pushButton_4_clicked();
-
-    void on_actionAbout_SS13_Telescience_Manager_triggered();
+    void on_calibrateButton_clicked();
+    void on_bookmarkAdd_clicked();
+    void on_bookmarkDelete_clicked();
+    void on_bookmarkSave_clicked();
+    void on_bookmarkTable_itemSelectionChanged();
+    void on_actionAbout_triggered();
+    void on_actionUsage_triggered();
+    void on_calibrationMX_currentIndexChanged();
+    void on_calibrationMY_currentIndexChanged();
+    void on_calibrationCX_valueChanged();
+    void on_calibrationCY_valueChanged();
 
 private:
     Ui::MainWindow *ui;
