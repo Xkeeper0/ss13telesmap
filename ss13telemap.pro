@@ -4,12 +4,10 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui widgets
 
 QMAKE_CXXFLAGS += -std=c++11
 CONFIG += c++11
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = ss13telemap
 TEMPLATE = app

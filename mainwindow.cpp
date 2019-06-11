@@ -64,13 +64,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->bookmarkTable->setHorizontalHeaderLabels({"Name", "Map", "X", "Y"});
     ui->bookmarkTable->horizontalHeader()->setDefaultAlignment(Qt::AlignHCenter);
     ui->bookmarkTable->horizontalHeaderItem(0)->setTextAlignment(Qt::AlignLeft);
-    ui->bookmarkTable->horizontalHeader()->setResizeMode(0, QHeaderView::Interactive);
-    ui->bookmarkTable->horizontalHeader()->setResizeMode(1, QHeaderView::Interactive);
-    ui->bookmarkTable->horizontalHeader()->setResizeMode(2, QHeaderView::ResizeToContents);
-    ui->bookmarkTable->horizontalHeader()->setResizeMode(3, QHeaderView::ResizeToContents);
+    ui->bookmarkTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    ui->bookmarkTable->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Interactive);
+    ui->bookmarkTable->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    ui->bookmarkTable->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
 
-    ui->bookmarkTable->horizontalHeader()->resizeSection(2, 30);
-    ui->bookmarkTable->horizontalHeader()->resizeSection(3, 30);
+    ui->bookmarkTable->horizontalHeader()->resizeSection(2, 20);
+    ui->bookmarkTable->horizontalHeader()->resizeSection(3, 20);
 
     QSettings bookmark_settings("bookmarks.ini", QSettings::IniFormat);
 
